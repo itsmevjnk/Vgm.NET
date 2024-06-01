@@ -688,7 +688,7 @@ namespace VgmNet
                 opn2Clock = reader.ReadUInt32();
                 opmClock = reader.ReadUInt32();
             }
-            if(MajorVersion == 1 && MinorVersion < 51)
+            if (MajorVersion == 1 && MinorVersion < 51)
             {
                 /* bit 31 shouldn't be set on VGM < 1.51 */
                 opn2Clock &= 0x7FFFFFFF;
@@ -731,7 +731,7 @@ namespace VgmNet
                 AY8910 = new AY8910Setting(ayClock, ayType, ayFlags);
 
                 OPN = new OPNSetting(opnClock, reader.ReadByte()); // YM2203
-                OPNA = new OPNASetting(opnClock, reader.ReadByte()); // YM2608
+                OPNA = new OPNASetting(opnaClock, reader.ReadByte()); // YM2608
             }
 
             if (MajorVersion > 1 || MinorVersion >= 60)
@@ -753,7 +753,7 @@ namespace VgmNet
             if (MajorVersion > 1 || MinorVersion >= 61)
             {
                 /* read VGM 1.61 additions at 0x80-B4 */
-                
+
                 DMG = new DMGSetting(reader.ReadUInt32()); // GameBoy DMG
                 APU = new APUSetting(reader.ReadUInt32()); // NES APU
                 MultiPCM = new MultiPCMSetting(reader.ReadUInt32()); // MultiPCM
@@ -778,20 +778,20 @@ namespace VgmNet
                 QSound = new QSoundSetting(reader.ReadUInt32()); // QSound
             }
 
-            if(MajorVersion > 1 || MinorVersion >= 71)
+            if (MajorVersion > 1 || MinorVersion >= 71)
             {
                 /* read SCSP info (VGM 1.71+) */
                 SCSP = new SCSPSetting(reader.ReadUInt32());
             }
 
-            if(MajorVersion > 1 || MinorVersion >= 70)
+            if (MajorVersion > 1 || MinorVersion >= 70)
             {
                 /* read extra header offset (VGM 1.70+) */
                 if (MajorVersion == 1 && MinorVersion < 71) reader.ReadUInt32(); // skip SCSP field
                 ExtraHeaderField = reader.ReadUInt32();
             }
 
-            if(MajorVersion > 1 || MinorVersion >= 71)
+            if (MajorVersion > 1 || MinorVersion >= 71)
             {
                 /* read VGM 1.71 addition fields at 0xC0-E0 */
 
