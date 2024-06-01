@@ -53,6 +53,26 @@ namespace VgmInfo
                     Console.WriteLine($"  Loop base              : {header.LoopBase}");
                     Console.WriteLine($"  Loop modifier          : {header.LoopModifier}");
 
+                    if (vgm.GD3 != null)
+                    {
+                        var gd3 = vgm.GD3;
+
+                        Console.WriteLine($"GD3 tag:");
+                        Console.WriteLine($"  Ident                  : {(int)gd3.Ident[0]:X2} {(int)gd3.Ident[1]:X2} {(int)gd3.Ident[2]:X2} {(int)gd3.Ident[3]:X2}");
+                        Console.WriteLine($"  Version                : 0x{gd3.Version:X8}");
+                        Console.WriteLine($"  Track name             : {gd3.TrackName}");
+                        Console.WriteLine($"  Original track name    : {gd3.OrigTrackName}");
+                        Console.WriteLine($"  Game name              : {gd3.GameName}");
+                        Console.WriteLine($"  Original game name     : {gd3.OrigGameName}");
+                        Console.WriteLine($"  System name            : {gd3.SysName}");
+                        Console.WriteLine($"  Original system name   : {gd3.OrigSysName}");
+                        Console.WriteLine($"  Author name            : {gd3.Author}");
+                        Console.WriteLine($"  Original author name   : {gd3.OrigAuthor}");
+                        Console.WriteLine($"  Game release date      : {gd3.ReleaseDate}");
+                        Console.WriteLine($"  Track dumper name      : {gd3.RipAuthor}");
+                        Console.WriteLine($"  Notes                  : {gd3.Notes}");
+                    }
+
                     if (PrintChipSettingTitle("SN76489 PSG", header.PSG))
                     {
                         Console.WriteLine($"  Feedback pattern       : 0x{header.PSG.Feedback:X4}");
