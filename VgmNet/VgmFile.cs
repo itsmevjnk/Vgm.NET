@@ -7,17 +7,27 @@ namespace VgmNet
     public class VgmFile
     {
         /// <summary>VGM header information.</summary>
-        public VgmHeader Header;
+        public VgmHeader Header { get; private set; }
 
         /// <summary>GD3 tag (if applicable, null otherwise).</summary>
-        public GD3Tag GD3 = null;
+        public GD3Tag GD3 { get; private set; }
 
         /// <summary>Flag indicating the provided file is compressed (VGZ).</summary>
         public bool Compressed { get; private set; }
 
+        /// <summary>The VGM file's music data array.</summary>
+        private byte[] _data;
+
+        /// <summary>Stream object for accessing music data from the VGM file.</summary>
+        public MemoryStream DataStream { get; private set; }
+
+        /// <summary>Command parser object for the VGM file.</summary>
+        public VgmParser Parser { get; private set; }
+
         /// <summary>Class constructor stub.</summary>
         /// <param name="data">VGM data stream.</param>
-        private void InitStub(Stream data)
+        /// <param name="sampleCb">Next sample callback for parser.</param>
+        private void InitStub(Stream data, NextSampleCallback sampleCb)
         {
             Stream dataBuffered = null; // buffered data stream if needed
             if (!data.CanSeek)
@@ -56,6 +66,14 @@ namespace VgmNet
                 GD3 = new GD3Tag(data);
             }
 
+            /* read music data */
+            _data = new byte[Header.Length - Header.DataOffset]; // allocate data array
+            data.Seek(Header.DataOffset, SeekOrigin.Begin);
+            data.Read(_data, 0, _data.Length);
+            DataStream = new MemoryStream(_data); // set up data stream
+
+            Parser = new VgmParser(DataStream, sampleCb);
+
             /* dispose of our intermediary streams */
             if (Compressed) data.Dispose();
             if (dataBuffered != null) dataBuffered.Dispose(); 
@@ -63,17 +81,19 @@ namespace VgmNet
 
         /// <summary>Initialise the class with VGM file data stored in a byte array.</summary>
         /// <param name="data">Byte array of VGM file data.</param>
-        public VgmFile(byte[] data)
+        /// <param name="sampleCb">Next sample callback for parser.</param>
+        public VgmFile(byte[] data, NextSampleCallback sampleCb = null)
         {
             using (var dataStream = new MemoryStream(data))
-                InitStub(dataStream);
+                InitStub(dataStream, sampleCb);
         }
 
         /// <summary>Initialise the class with VGM file data stored in a byte array.</summary>
         /// <param name="data"></param>
-        public VgmFile(Stream data)
+        /// <param name="sampleCb">Next sample callback for parser.</param>
+        public VgmFile(Stream data, NextSampleCallback sampleCb = null)
         {
-            InitStub(data);
+            InitStub(data, sampleCb);
         }
     }
 }
