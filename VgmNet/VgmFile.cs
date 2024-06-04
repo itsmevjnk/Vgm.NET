@@ -72,7 +72,7 @@ namespace VgmNet
             data.Read(_data, 0, _data.Length);
             DataStream = new MemoryStream(_data); // set up data stream
 
-            Parser = new VgmParser(DataStream, sampleCb);
+            Parser = new VgmParser(Header, DataStream, sampleCb);
 
             /* dispose of our intermediary streams */
             if (Compressed) data.Dispose();

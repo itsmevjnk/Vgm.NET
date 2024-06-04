@@ -17,6 +17,9 @@ namespace VgmNet
     /// <summary>VGM data parser class.</summary>
     public class VgmParser
     {
+        /// <summary>VGM header.</summary>
+        private VgmHeader _header;
+
         /// <summary>VGM data stream.</summary>
         private Stream _data;
 
@@ -47,23 +50,58 @@ namespace VgmNet
         public NextSampleCallback OnSample;
 
         /// <summary>Number of samples played.</summary>
-        public uint Samples { get; private set; } = 0;
+        public uint SamplesPlayed { get; private set; } = 0;
+
+        /// <summary>Current sample position in the track.</summary>
+        public uint Position { get; private set; } = 0;
+
+        /// <summary>Timestamp of current position in seconds.</summary>
+        public float Timestamp => (float)Position / 44100;
+
+        /// <summary>Number of loops played.</summary>
+        public uint LoopsPlayed { get; private set; } = 0;
+
+        /// <summary>Whether looping is available.</summary>
+        public bool Loop => _header.Loop;
+
+        /// <summary>Total number of samples.</summary>
+        public uint TotalSamples => _header.Samples;
+
+        /// <summary>Total number of loop samples.</summary>
+        public uint LoopSamples => _header.LoopSamples;
+
+        /// <summary>Whether the looping portion of the track is being played.</summary>
+        public bool PlayingLoop => Loop && Position >= (TotalSamples - LoopSamples);
 
         /// <summary>Helper method for advancing by the specified number of samples.</summary>
         /// <param name="n">The number of samples to advance by.</param>
         private void AdvanceSample(int n = 1)
         {
-            for (var i = 0; i < n; i++, Samples++)
+            for (var i = 0; i < n; i++, SamplesPlayed++, Position++)
             {
                 foreach (var emu in _emulators) emu.AdvanceSample(); // advance all chips by a sample
                 OnSample(this); // invoke sample advancement callback
             }
         }
 
+        /// <summary>Handle end of data stream.</summary>
+        private void StreamEndHandler()
+        {
+            if (Loop)
+            {
+                /* there's a loop */
+                Position = TotalSamples - LoopSamples;
+                _data.Seek(_header.LoopOffset - _header.DataOffset, SeekOrigin.Begin); // seek back to beginning of loop portion
+                LoopsPlayed++;
+            }
+            else EndOfStream = true; // mark end of stream so we won't come back
+        }
+
         /// <summary>Instantiate a new parser object with the specified data stream.</summary>
         /// <param name="data">The data stream to be parsed.</param>
-        public VgmParser(Stream data, NextSampleCallback sampleCallback)
+        public VgmParser(VgmHeader header, Stream data, NextSampleCallback sampleCallback)
         {
+            _header = header;
             _data = data;
             OnSample = sampleCallback;
             Emulators = _emulators;
@@ -78,23 +116,25 @@ namespace VgmNet
             });
             _callbacks.Add(0x62, (_, __) => AdvanceSample(735)); // wait 735 samples (1/60 sec)
             _callbacks.Add(0x63, (_, __) => AdvanceSample(882)); // wait 882 samples (1/50 sec)
-            _callbacks.Add(0x66, (_, __) => { EndOfStream = true; }); // end of sound data
+            _callbacks.Add(0x66, (_, __) => { StreamEndHandler(); }); // end of sound data
         }
 
         /// <summary>Parse the next command in the stream.</summary>
-        public void Next()
+        /// <returns><c>true</c> if the end of the data stream has been reached, or <c>false</c> otherwise.</returns>
+        public bool Next()
         {
             if (EndOfStream) throw new InvalidOperationException("Attempting to parse beyond end of data stream");
 
             var cmd = _data.ReadByte();
-            if (cmd == -1)
+            if (cmd == -1) // end of stream
             {
-                EndOfStream = true;
-                return;
+                StreamEndHandler();
+                return true;
             }
 
             if (!_callbacks.ContainsKey((byte)cmd)) throw new NotImplementedException($"No handlers for command 0x{cmd:X2} were installed.");
             _callbacks[(byte)cmd](_data, this); // invoke handler
+            return (cmd == 0x66);
         }
 
         /// <summary>Left channel output (aggregated from all available emulators).</summary>

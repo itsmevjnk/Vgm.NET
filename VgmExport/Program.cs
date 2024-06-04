@@ -28,9 +28,10 @@ namespace VgmExport
                         });
                         var parser = vgm.Parser;
                         parser.InstallEmulator(new PSGEmulator(vgm.Header.PSG).Interface);
-                        while (!parser.EndOfStream)
+                        while (!parser.EndOfStream && parser.LoopsPlayed < 3)
                         {
-                            Console.WriteLine($"Current sample count: {parser.Samples}");
+                            int timeMin = (int)parser.Timestamp / 60; var timeSec = parser.Timestamp - timeMin * 60; // convert to mm:ss
+                            Console.WriteLine($"Position: {parser.Position} ({timeMin:00}:{timeSec:00.000}{(parser.PlayingLoop ? $", loop #{parser.LoopsPlayed + 1}" : "")}), total samples played: {parser.SamplesPlayed}");
                             parser.Next();
                         }
                     }
